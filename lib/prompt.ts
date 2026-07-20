@@ -1,4 +1,10 @@
-import { GenerateRequest, RefineRequest, SimulateRequest } from "./types";
+import {
+  GenerateRequest,
+  RefineRequest,
+  SimulateRequest,
+  ContentRequest,
+  ABRequest,
+} from "./types";
 
 export const SYSTEM_PROMPT = `You are a world-class digital marketing strategist and consumer psychologist.
 Given a business, you produce realistic, nuanced buyer personas and a ready-to-run marketing playbook for each one.
@@ -23,74 +29,38 @@ ${dataSection}
 Return JSON matching this exact schema:
 
 {
-  "businessSummary": string,           // 2-3 sentence strategic summary
+  "businessSummary": string,
   "personas": [
     {
-      "id": string,                    // slug, e.g. "busy-founder"
-      "name": string,                  // memorable persona name
-      "tagline": string,               // one-line identity
-      "avatar": string,                // an emoji representing them
-      "priority": {                   // how important to target first
-        "score": number,              // 0-100 (value x reachability for the goals)
-        "reason": string              // one-line rationale
-      },
-      "empathy": {                    // empathy map
-        "says": string[],             // what they say out loud
-        "thinks": string[],           // what they think privately
-        "does": string[],             // what they do
-        "feels": string[]             // what they feel
-      },
-      "jtbd": string[],               // jobs-to-be-done: jobs they'd hire the product to do
-      "confidence": {                 // how evidence-backed this persona is
-        "score": number,              // 0-100
-        "basis": "data" | "inferred", // "data" only if user supplied real data
-        "note": string                // why
-      },
-      "marketSizing": {               // reasoned reachable-market ranges
-        "tam": string,                // total addressable market (text/range)
-        "sam": string,                // serviceable available market
-        "som": string                 // serviceable obtainable market (realistic near-term)
-      },
-      "competitive": {
-        "competitors": string[],      // who else targets this persona
-        "whiteSpace": string          // positioning gap to exploit
-      },
-      "validation": {                 // how to test this persona hypothesis
-        "discussionGuide": string[],  // interview topics
-        "surveyQuestions": string[],  // quantitative questions
-        "recruit": string,            // where to find them
-        "sampleSize": string          // suggested n
-      },
-      "demographics": {
-        "ageRange": string,
-        "location": string,
-        "role": string,
-        "income": string,
-        "education": string
-      },
-      "psychographics": {
-        "values": string[],
-        "fears": string[],
-        "motivations": string[]
-      },
-      "painPoints": string[],          // 3-5 specific pains
-      "goals": string[],               // 3-5 things they want
-      "channels": string[],            // where they actually spend time
-      "messaging": {
-        "hook": string,                // attention-grabbing opener
-        "tone": string,                // how to sound
-        "objections": string[]         // likely objections to overcome
-      },
+      "id": string,
+      "name": string,
+      "tagline": string,
+      "avatar": string,
+      "priority": { "score": number, "reason": string },
+      "empathy": { "says": string[], "thinks": string[], "does": string[], "feels": string[] },
+      "jtbd": string[],
+      "confidence": { "score": number, "basis": "data" | "inferred", "note": string },
+      "marketSizing": { "tam": string, "sam": string, "som": string },
+      "competitive": { "competitors": string[], "whiteSpace": string },
+      "validation": { "discussionGuide": string[], "surveyQuestions": string[], "recruit": string, "sampleSize": string },
+      "demographics": { "ageRange": string, "location": string, "role": string, "income": string, "education": string },
+      "psychographics": { "values": string[], "fears": string[], "motivations": string[] },
+      "painPoints": string[],
+      "goals": string[],
+      "channels": string[],
+      "messaging": { "hook": string, "tone": string, "objections": string[] },
       "playbook": {
-        "contentPillars": [ { "theme": string, "angle": string } ],  // 3-4
-        "weeklyPlan": [                                                // 5-7 slots
-          { "day": string, "channel": string, "format": string, "topic": string, "cta": string }
-        ],
-        "bestTimes": string[],          // best posting times
-        "adHooks": string[]             // 3-4 ad headlines
+        "contentPillars": [ { "theme": string, "angle": string } ],
+        "weeklyPlan": [ { "day": string, "channel": string, "format": string, "topic": string, "cta": string } ],
+        "bestTimes": string[],
+        "adHooks": string[]
       }
     }
-  ]
+  ],
+  "analysis": {
+    "overlaps": [ { "personas": [string, string], "score": number, "reason": string } ],
+    "notes": string
+  }
 }
 
 Requirements:
@@ -98,19 +68,9 @@ Requirements:
 - Make each persona specific to the industry, not generic.
 - The weeklyPlan must be concrete (real channels, real formats, real topics, real CTAs).
 - Set "priority.score" by weighing expected customer value against how reachable/addressable they are for the stated goals (higher = target first).
-- Keep personas genuinely distinct. If two personas overlap heavily, differentiate them clearly (role, need, or channel).
+- Keep personas genuinely distinct. If two personas overlap heavily, differentiate them clearly.
 - Set "confidence.basis" to "data" ONLY when the user supplied real data that supports this persona; otherwise "inferred". Never fake precision in marketSizing — use reasoned ranges.
-- If data was provided, reflect its language and real objections.
-
-Also return a top-level "analysis" object with this schema (alongside "businessSummary" and "personas"):
-{
-  "analysis": {
-    "overlaps": [                       // only list pairs with notable overlap
-      { "personas": [string, string], "score": number, "reason": string }
-    ],
-    "notes": string                    // segmenting advice for the market
-  }
-}`;
+- If data was provided, reflect its language and real objections.`;
 }
 
 export function buildRefinePrompt(req: RefineRequest): string {
@@ -154,15 +114,82 @@ Return JSON with this exact schema:
 {
   "reactions": [
     {
-      "personaId": string,            // match the id above
-      "interest": number,             // 0-100 predicted interest
+      "personaId": string,
+      "interest": number,
       "likelyToConvert": "high" | "medium" | "low",
-      "triggeredObjections": string[], // which of their objections this campaign triggers
-      "reaction": string,             // 1-2 sentence predicted reaction in their voice
-      "suggestedTweak": string        // concrete edit to improve resonance for them
+      "triggeredObjections": string[],
+      "reaction": string,
+      "suggestedTweak": string
     }
   ]
 }
 
 Be realistic and specific to each persona. No markdown, just the JSON.`;
+}
+
+export function buildContentPrompt(req: ContentRequest): string {
+  const p = req.persona;
+  return `Write ready-to-publish marketing content for ONE buyer persona.
+
+BUSINESS SUMMARY: ${req.businessSummary}
+PERSONA: ${p.name} (${p.tagline})
+GOALS: ${p.goals.join(", ")}
+PAINS: ${p.painPoints.join(", ")}
+TONE: ${p.messaging.tone}
+HOOK: ${p.messaging.hook}
+
+FORMATS REQUESTED: ${req.formats.join(", ")} (e.g. social post, ad, email)
+COUNT: ${req.count} assets total, distributed across the requested formats and the persona's channels (${p.channels.join(
+    ", "
+  )}).
+
+Return JSON with this exact schema:
+{
+  "assets": [
+    { "channel": string, "format": string, "text": string }
+  ]
+}
+
+Rules:
+- Each asset must match the persona's tone and speak to their goals/pains.
+- Make copy concrete and platform-appropriate (length, style).
+- No placeholders like [link]. Write final copy.
+No markdown, just the JSON.`;
+}
+
+export function buildABPrompt(req: ABRequest): string {
+  const personas = req.personas
+    .map(
+      (p) =>
+        `- id: ${p.id} | ${p.name} (${p.tagline}) | pains: ${p.painPoints.join(
+          ", "
+        )} | goals: ${p.goals.join(", ")}`
+    )
+    .join("\n");
+
+  return `For each buyer persona, decide which of two marketing messages would perform better, and why.
+
+BUSINESS SUMMARY: ${req.businessSummary}
+
+MESSAGE A:
+""'
+${req.messageA}
+"""
+
+MESSAGE B:
+""'
+${req.messageB}
+"""
+
+PERSONAS:
+${personas}
+
+Return JSON:
+{
+  "results": [
+    { "personaId": string, "winner": "A" | "B" | "tie", "reason": string }
+  ]
+}
+
+Be specific to each persona's pains and goals. No markdown, just the JSON.`;
 }

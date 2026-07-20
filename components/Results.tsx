@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Persona, GenerateResponse } from "@/lib/types";
+import { Persona, GenerateResponse, ABResponse, ABResult, ContentResponse } from "@/lib/types";
 import Compare from "./Compare";
 import Simulate from "./Simulate";
 
@@ -28,6 +28,7 @@ export default function Results({
 }: ResultsProps) {
   const [view, setView] = useState<"cards" | "compare">("cards");
   const [showSim, setShowSim] = useState(false);
+  const [showAB, setShowAB] = useState(false);
   const [sortPrio, setSortPrio] = useState(false);
 
   const hasPriority = data.personas.some((p) => p.priority);
@@ -64,6 +65,9 @@ export default function Results({
           <button onClick={() => setShowSim((s) => !s)} className={btn}>
             {showSim ? "Hide sim" : "Simulate"}
           </button>
+          <button onClick={() => setShowAB((s) => !s)} className={btn}>
+            {showAB ? "Hide A/B" : "A/B Test"}
+          </button>
           {hasPriority && (
             <button onClick={() => setSortPrio((s) => !s)} className={btn}>
               {sortPrio ? "Default order" : "Sort by priority"}
@@ -79,6 +83,21 @@ export default function Results({
 
       {showSim && (
         <Simulate
+          businessSummary={data.businessSummary}
+          personas={data.personas.map((p) => ({
+            id: p.id,
+            name: p.name,
+            tagline: p.tagline,
+            painPoints: p.painPoints,
+            goals: p.goals,
+            messaging: p.messaging,
+          }))}
+          model={model}
+        />
+      )}
+
+      {showAB && (
+        <ABTest
           businessSummary={data.businessSummary}
           personas={data.personas.map((p) => ({
             id: p.id,
@@ -149,6 +168,7 @@ function PersonaCard({
 }) {
   const [tab, setTab] = useState<"profile" | "playbook" | "research">("profile");
   const [showRefine, setShowRefine] = useState(false);
+  const [showContent, setShowContent] = useState(false);
   const [instruction, setInstruction] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -202,12 +222,20 @@ function PersonaCard({
           </div>
         </div>
         {!readOnly && (
-          <button
-            onClick={() => setShowRefine((s) => !s)}
-            className="no-print rounded-lg border border-white/15 px-2 py-1 text-xs text-white/70 hover:bg-white/10"
-          >
-            Refine
-          </button>
+          <>
+            <button
+              onClick={() => setShowContent((s) => !s)}
+              className="no-print rounded-lg border border-white/15 px-2 py-1 text-xs text-white/70 hover:bg-white/10"
+            >
+              Content
+            </button>
+            <button
+              onClick={() => setShowRefine((s) => !s)}
+              className="no-print rounded-lg border border-white/15 px-2 py-1 text-xs text-white/70 hover:bg-white/10"
+            >
+              Refine
+            </button>
+          </>
         )}
       </div>
 
@@ -233,6 +261,15 @@ function PersonaCard({
           </div>
           {err && <p className="mt-1 text-xs text-red-300">{err}</p>}
         </div>
+      )}
+
+      {showContent && (
+        <ContentPanel
+          businessSummary={businessSummary}
+          persona={persona}
+          model={model}
+          onClose={() => setShowContent(false)}
+        />
       )}
 
       <div className="no-print flex gap-1 border-b border-white/10 px-3 pt-3 text-sm">
@@ -480,6 +517,198 @@ function Group({ title, items }: { title: string; items: string[] }) {
           <li key={i}>{it}</li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+const CONTENT_FORMATS = ["social post", "ad", "email"];
+
+function ContentPanel({
+  businessSummary,
+  persona,
+  model,
+  onClose,
+}: {
+  businessSummary: string;
+  persona: Persona;
+  model: string;
+  onClose: () => void;
+}) {
+  const [selected, setSelected] = useState<string[]>(["social post", "ad"]);
+  const [count, setCount] = useState(4);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [assets, setAssets] = useState<ContentResponse["assets"]>([]);
+
+  const toggle = (f: string) =>
+    setSelected((s) => (s.includes(f) ? s.filter((x) => x !== f) : [...s, f]));
+
+  const gen = async () => {
+    if (!selected.length) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          businessSummary,
+          persona: {
+            id: persona.id,
+            name: persona.name,
+            tagline: persona.tagline,
+            channels: persona.channels,
+            goals: persona.goals,
+            painPoints: persona.painPoints,
+            messaging: persona.messaging,
+          },
+          formats: selected,
+          count,
+          model,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Content generation failed");
+      setAssets((json as ContentResponse).assets);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="no-print border-b border-white/10 bg-black/20 p-3">
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        {CONTENT_FORMATS.map((f) => (
+          <button
+            key={f}
+            onClick={() => toggle(f)}
+            className={`rounded-full border px-2 py-0.5 text-xs ${
+              selected.includes(f)
+                ? "border-indigo-400 bg-indigo-500/20 text-indigo-200"
+                : "border-white/15 text-white/60"
+            }`}
+          >
+            {f}
+          </button>
+        ))}
+        <label className="ml-2 text-xs text-white/50">
+          count
+          <input
+            type="number"
+            min={1}
+            max={12}
+            value={count}
+            onChange={(e) => setCount(Number(e.target.value) || 1)}
+            className="ml-1 w-14 rounded border border-white/15 bg-black/30 px-1 py-0.5 text-white"
+          />
+        </label>
+        <button
+          onClick={gen}
+          disabled={loading || !selected.length}
+          className="rounded-lg bg-indigo-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-400 disabled:opacity-50"
+        >
+          {loading ? "Writing…" : "Generate"}
+        </button>
+        <button onClick={onClose} className="text-xs text-white/50">
+          Close
+        </button>
+      </div>
+      {error && <p className="text-xs text-red-300">{error}</p>}
+      <div className="mt-2 space-y-2">
+        {assets.map((a, i) => (
+          <div key={i} className="rounded-lg border border-white/10 bg-black/30 p-2">
+            <div className="mb-1 text-xs text-indigo-300">
+              {a.format} · {a.channel}
+            </div>
+            <p className="whitespace-pre-wrap text-sm text-white/85">{a.text}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ABTest({
+  businessSummary,
+  personas,
+  model,
+}: {
+  businessSummary: string;
+  personas: { id: string; name: string; tagline: string; painPoints: string[]; goals: string[]; messaging: { hook: string; tone: string; objections: string[] } }[];
+  model: string;
+}) {
+  const [a, setA] = useState("");
+  const [b, setB] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [results, setResults] = useState<ABResult[]>([]);
+  const [nameOf, setNameOf] = useState<Record<string, string>>({});
+
+  const run = async () => {
+    if (!a.trim() || !b.trim()) return;
+    setLoading(true);
+    setError(null);
+    setNameOf(Object.fromEntries(personas.map((p) => [p.id, p.name])));
+    try {
+      const res = await fetch("/api/abtest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ businessSummary, messageA: a, messageB: b, personas, model }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "A/B test failed");
+      setResults((json as ABResponse).results);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const color = (w: string) =>
+    w === "A" ? "text-emerald-300" : w === "B" ? "text-indigo-300" : "text-white/60";
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+      <h3 className="mb-2 text-sm font-semibold text-white">A/B message test</h3>
+      <p className="mb-2 text-xs text-white/50">Paste two messages. See which wins for each persona.</p>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <textarea
+          className="min-h-[70px] w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:border-indigo-400"
+          value={a}
+          onChange={(e) => setA(e.target.value)}
+          placeholder="Message A — e.g. 'Dermatologist-approved vegan serum, 20% off.'"
+        />
+        <textarea
+          className="min-h-[70px] w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:border-indigo-400"
+          value={b}
+          onChange={(e) => setB(e.target.value)}
+          placeholder="Message B — e.g. 'Join 10k with calm, sensitive-skin routines.'"
+        />
+      </div>
+      <button
+        onClick={run}
+        disabled={loading || !a.trim() || !b.trim()}
+        className="mt-2 rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-400 disabled:opacity-50"
+      >
+        {loading ? "Testing…" : "Run A/B test"}
+      </button>
+      {error && <div className="mt-3 text-sm text-red-300">{error}</div>}
+      {results.length > 0 && (
+        <div className="mt-4 space-y-2">
+          {results.map((r) => (
+            <div key={r.personaId} className="rounded-lg border border-white/10 bg-black/20 p-3">
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-white">{nameOf[r.personaId] || r.personaId}</span>
+                <span className={`text-xs font-semibold ${color(r.winner)}`}>Winner: {r.winner}</span>
+              </div>
+              <p className="mt-1 text-sm text-white/80">{r.reason}</p>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

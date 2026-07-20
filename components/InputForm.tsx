@@ -17,9 +17,11 @@ const DEFAULT_MODEL = "openai/gpt-4o-mini";
 export default function InputForm({
   onSubmit,
   loading,
+  initial,
 }: {
   onSubmit: (data: FormState) => void;
   loading: boolean;
+  initial?: Partial<FormState>;
 }) {
   const [form, setForm] = useState<FormState>({
     businessName: "",
@@ -29,7 +31,16 @@ export default function InputForm({
     audienceSize: "broad",
     dataUpload: "",
     model: DEFAULT_MODEL,
+    ...initial,
   });
+
+  const onCsv = async (file: File) => {
+    const text = await file.text();
+    setForm((f) => ({
+      ...f,
+      dataUpload: f.dataUpload ? `${f.dataUpload}\n\n${text}` : text,
+    }));
+  };
 
   const set = (k: keyof FormState, v: string) =>
     setForm((f) => ({ ...f, [k]: v }));
@@ -102,6 +113,18 @@ export default function InputForm({
           onChange={(e) => set("dataUpload", e.target.value)}
           placeholder="Paste customer reviews, survey answers, support tickets, or a website blurb. The AI uses this to make personas real."
         />
+        <label className="mt-2 inline-block cursor-pointer rounded-lg border border-white/15 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10">
+          Upload CSV
+          <input
+            type="file"
+            accept=".csv,text/csv"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) onCsv(f);
+            }}
+          />
+        </label>
       </Field>
 
       <Field label="Model (OpenRouter)">

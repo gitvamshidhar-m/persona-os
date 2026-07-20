@@ -6,6 +6,7 @@ import Results from "@/components/Results";
 import { GenerateResponse, EMPTY_RESPONSE, Persona, SavedBuild } from "@/lib/types";
 import { decodeShare, encodeShare } from "@/lib/share";
 import { deleteBuild, listBuilds, saveBuild } from "@/lib/storage";
+import { TEMPLATES } from "@/lib/templates";
 
 export default function Home() {
   const [loading, setLoading] = useState(false);
@@ -104,6 +105,17 @@ export default function Home() {
 
   const hasResult = result.personas.length > 0;
 
+  const [preset, setPreset] = useState<Partial<FormState> | undefined>();
+
+  const applyTemplate = (t: (typeof TEMPLATES)[number]) => {
+    setPreset({
+      industry: t.industry,
+      description: t.description,
+      goals: t.goals,
+      audienceSize: t.audienceSize,
+    });
+  };
+
   return (
     <main className="mx-auto max-w-5xl px-4 py-10">
       <header className="no-print mb-6 flex items-start justify-between gap-3">
@@ -155,7 +167,21 @@ export default function Home() {
       )}
 
       {!hasResult ? (
-        <InputForm onSubmit={handleSubmit} loading={loading} />
+        <div className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            <span className="self-center text-xs text-white/40">Templates:</span>
+            {TEMPLATES.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => applyTemplate(t)}
+                className="rounded-full border border-white/15 px-3 py-1 text-xs text-white/80 hover:bg-white/10"
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <InputForm key={preset?.industry ?? "blank"} onSubmit={handleSubmit} loading={loading} initial={preset} />
+        </div>
       ) : (
         <Results
           data={result}

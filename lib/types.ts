@@ -152,6 +152,50 @@ export interface SavedBuild {
   response: GenerateResponse;
 }
 
+export interface ContentAsset {
+  channel: string;
+  format: string;
+  text: string;
+}
+
+export interface ContentRequest {
+  businessSummary: string;
+  persona: {
+    id: string;
+    name: string;
+    tagline: string;
+    channels: string[];
+    goals: string[];
+    painPoints: string[];
+    messaging: Persona["messaging"];
+  };
+  formats: string[];
+  count: number;
+  model: string;
+}
+
+export interface ContentResponse {
+  assets: ContentAsset[];
+}
+
+export interface ABResult {
+  personaId: string;
+  winner: "A" | "B" | "tie";
+  reason: string;
+}
+
+export interface ABRequest {
+  businessSummary: string;
+  messageA: string;
+  messageB: string;
+  personas: { id: string; name: string; tagline: string; painPoints: string[]; goals: string[]; messaging: Persona["messaging"] }[];
+  model: string;
+}
+
+export interface ABResponse {
+  results: ABResult[];
+}
+
 export const EMPTY_RESPONSE: GenerateResponse = {
   businessSummary: "",
   personas: [],
