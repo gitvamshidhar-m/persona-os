@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import InputForm, { FormState } from "@/components/InputForm";
 import Results from "@/components/Results";
+import AuthButton from "@/components/AuthButton";
 import { GenerateResponse, EMPTY_RESPONSE, Persona, SavedBuild } from "@/lib/types";
 import { decodeShare, encodeShare } from "@/lib/share";
 import { deleteBuild, listBuilds, saveBuild } from "@/lib/storage";
 import { TEMPLATES } from "@/lib/templates";
+import { getSupabaseBrowser } from "@/lib/supabase/client";
 
 export default function Home() {
   const [loading, setLoading] = useState(false);
@@ -19,6 +21,8 @@ export default function Home() {
 
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState<SavedBuild[]>([]);
+  const [supabase] = useState(() => getSupabaseBrowser());
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
     const hash = window.location.hash;
@@ -30,6 +34,17 @@ export default function Home() {
       }
     }
   }, []);
+
+  useEffect(() => {
+    if (!supabase) return;
+    supabase.auth.getUser().then(({ data }) =>
+      setUserEmail(data.user ? data.user.email ?? "logged in" : null)
+    );
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) =>
+      setUserEmail(s?.user ? s.user.email ?? "logged in" : null)
+    );
+    return () => sub.subscription.unsubscribe();
+  }, [supabase]);
 
   const handleSubmit = async (data: FormState) => {
     setModel(data.model);
@@ -60,8 +75,24 @@ export default function Home() {
     }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const name = (result.businessSummary || "Build").slice(0, 40);
+    if (supabase && userEmail) {
+      try {
+        const res = await fetch("/api/builds", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, data: result }),
+        });
+        if (res.ok) {
+          setSaved(true);
+          setTimeout(() => setSaved(false), 2000);
+          return;
+        }
+      } catch {
+        /* fall back to local */
+      }
+    }
     saveBuild(name, result);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -87,8 +118,25 @@ export default function Home() {
     window.history.replaceState(null, "", window.location.pathname);
   };
 
-  const openHistory = () => {
-    setHistory(listBuilds());
+  const refreshHistory = async (): Promise<SavedBuild[]> => {
+    if (supabase && userEmail) {
+      try {
+        const res = await fetch("/api/builds");
+        if (res.ok) {
+          const json = await res.json();
+          return (json.builds as Array<{ id: string; name: string; created_at: string; data: GenerateResponse }>).map(
+            (b) => ({ id: b.id, name: b.name, createdAt: new Date(b.created_at).getTime(), response: b.data })
+          );
+        }
+      } catch {
+        /* fall back to local */
+      }
+    }
+    return listBuilds();
+  };
+
+  const openHistory = async () => {
+    setHistory(await refreshHistory());
     setShowHistory(true);
   };
 
@@ -98,9 +146,17 @@ export default function Home() {
     setShowHistory(false);
   };
 
-  const removeBuild = (id: string) => {
-    deleteBuild(id);
-    setHistory(listBuilds());
+  const removeBuild = async (id: string) => {
+    if (supabase && userEmail) {
+      try {
+        await fetch(`/api/builds?id=${id}`, { method: "DELETE" });
+      } catch {
+        /* ignore */
+      }
+    } else {
+      deleteBuild(id);
+    }
+    setHistory(await refreshHistory());
   };
 
   const hasResult = result.personas.length > 0;
@@ -127,9 +183,12 @@ export default function Home() {
             Describe any business. Get buyer personas + live marketing playbooks — for any industry.
           </p>
         </div>
-        <button onClick={openHistory} className="shrink-0 rounded-lg border border-white/15 px-3 py-1.5 text-sm text-white/80 hover:bg-white/10">
-          History
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <AuthButton />
+          <button onClick={openHistory} className="rounded-lg border border-white/15 px-3 py-1.5 text-sm text-white/80 hover:bg-white/10">
+            History
+          </button>
+        </div>
       </header>
 
       {error && (

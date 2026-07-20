@@ -152,6 +152,13 @@ export interface SavedBuild {
   response: GenerateResponse;
 }
 
+export interface CloudBuild {
+  id: string;
+  name: string;
+  createdAt: number;
+  data: GenerateResponse;
+}
+
 export interface ContentAsset {
   channel: string;
   format: string;
