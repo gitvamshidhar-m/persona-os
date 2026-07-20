@@ -56,28 +56,28 @@ export default function Results({
         </div>
       )}
 
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <p className="max-w-2xl text-sm text-white/70">{data.businessSummary}</p>
         <div className="flex flex-wrap gap-2 no-print">
           <button onClick={() => setView(view === "cards" ? "compare" : "cards")} className={btn}>
-            {view === "cards" ? "Compare" : "Cards"}
+            {view === "cards" ? "▦ Compare" : "▤ Cards"}
           </button>
           <button onClick={() => setShowSim((s) => !s)} className={btn}>
-            {showSim ? "Hide sim" : "Simulate"}
+            {showSim ? "Hide sim" : "▸ Simulate"}
           </button>
           <button onClick={() => setShowAB((s) => !s)} className={btn}>
-            {showAB ? "Hide A/B" : "A/B Test"}
+            {showAB ? "Hide A/B" : "⚖ A/B Test"}
           </button>
           {hasPriority && (
             <button onClick={() => setSortPrio((s) => !s)} className={btn}>
-              {sortPrio ? "Default order" : "Sort by priority"}
+              {sortPrio ? "↕ Default" : "↕ By priority"}
             </button>
           )}
-          <button onClick={pdf} className={btn}>PDF</button>
-          <button onClick={download} className={btn}>Export JSON</button>
-          {!readOnly && <button onClick={onSave} className={btn}>Save</button>}
-          <button onClick={onShare} className={btn}>{shared ? "Link copied" : "Share link"}</button>
-          <button onClick={onReset} className={btn}>New</button>
+          <button onClick={pdf} className={btn}>⤓ PDF</button>
+          <button onClick={download} className={btn}>⤓ JSON</button>
+          {!readOnly && <button onClick={onSave} className={btnAccent}>💾 Save</button>}
+          <button onClick={onShare} className={btn}>{shared ? "✓ Copied" : "🔗 Share"}</button>
+          <button onClick={onReset} className={btn}>＋ New</button>
         </div>
       </div>
 
@@ -151,7 +151,9 @@ export default function Results({
 }
 
 const btn =
-  "rounded-lg border border-white/15 px-3 py-1.5 text-sm text-white/80 hover:bg-white/10";
+  "rounded-lg border border-white/15 px-3 py-1.5 text-sm text-white/80 transition hover:bg-white/10 hover:text-white";
+const btnAccent =
+  "rounded-lg bg-indigo-500 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-indigo-400";
 
 function PersonaCard({
   persona,
@@ -196,7 +198,7 @@ function PersonaCard({
   };
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+    <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5 transition hover:border-white/20 hover:shadow-xl hover:shadow-black/30">
       <div className="flex items-center justify-between border-b border-white/10 p-4">
         <div className="flex items-center gap-3">
           <div className="text-3xl">{persona.avatar}</div>

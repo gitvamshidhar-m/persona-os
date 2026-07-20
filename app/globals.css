@@ -16,6 +16,33 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  background-image:
+    radial-gradient(60rem 60rem at 15% -10%, rgba(99, 102, 241, 0.18), transparent 60%),
+    radial-gradient(50rem 50rem at 100% 0%, rgba(56, 189, 248, 0.12), transparent 55%);
+  background-attachment: fixed;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-toast {
+  animation: toast-in 0.22s ease-out;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.animate-spin {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes pulse-card {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 0.9; }
+}
+.animate-skeleton {
+  animation: pulse-card 1.3s ease-in-out infinite;
 }
 
 @media print {

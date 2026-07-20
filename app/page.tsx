@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import InputForm, { FormState } from "@/components/InputForm";
 import Results from "@/components/Results";
 import AuthButton from "@/components/AuthButton";
+import Toast from "@/components/Toast";
+import SkeletonResults from "@/components/SkeletonResults";
 import { GenerateResponse, EMPTY_RESPONSE, Persona, SavedBuild } from "@/lib/types";
 import { decodeShare, encodeShare } from "@/lib/share";
 import { deleteBuild, listBuilds, saveBuild } from "@/lib/storage";
@@ -17,7 +19,7 @@ export default function Home() {
   const [readOnly, setReadOnly] = useState(false);
   const [model, setModel] = useState("openai/gpt-4o-mini");
   const [shared, setShared] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState<SavedBuild[]>([]);
@@ -51,7 +53,6 @@ export default function Home() {
     setLoading(true);
     setError(null);
     setReadOnly(false);
-    setSaved(false);
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
@@ -85,8 +86,7 @@ export default function Home() {
           body: JSON.stringify({ name, data: result }),
         });
         if (res.ok) {
-          setSaved(true);
-          setTimeout(() => setSaved(false), 2000);
+          setToast("Saved to your cloud builds");
           return;
         }
       } catch {
@@ -94,8 +94,7 @@ export default function Home() {
       }
     }
     saveBuild(name, result);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setToast("Saved to this device");
   };
 
   const handleShare = async () => {
@@ -109,6 +108,7 @@ export default function Home() {
     }
     setShared(true);
     setTimeout(() => setShared(false), 2000);
+    setToast("Share link copied to clipboard");
   };
 
   const reset = () => {
@@ -174,19 +174,22 @@ export default function Home() {
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-10">
-      <header className="no-print mb-6 flex items-start justify-between gap-3">
+      <header className="no-print mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">
-            Persona <span className="text-indigo-400">OS</span>
+          <h1 className="text-3xl font-bold sm:text-4xl">
+            <span className="bg-gradient-to-r from-indigo-300 via-white to-sky-300 bg-clip-text text-transparent">
+              Persona
+            </span>{" "}
+            <span className="text-indigo-400">OS</span>
           </h1>
-          <p className="mt-1 text-sm text-white/60">
+          <p className="mt-2 max-w-xl text-sm text-white/60">
             Describe any business. Get buyer personas + live marketing playbooks — for any industry.
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <AuthButton />
-          <button onClick={openHistory} className="rounded-lg border border-white/15 px-3 py-1.5 text-sm text-white/80 hover:bg-white/10">
-            History
+          <button onClick={openHistory} className="flex items-center gap-1.5 rounded-lg border border-white/15 px-3 py-1.5 text-sm text-white/80 hover:bg-white/10">
+            <span aria-hidden>🕘</span> History
           </button>
         </div>
       </header>
@@ -242,19 +245,25 @@ export default function Home() {
 
       {!hasResult ? (
         <div className="space-y-4">
-          <div className="flex flex-wrap gap-2">
-            <span className="self-center text-xs text-white/40">Templates:</span>
-            {TEMPLATES.map((t) => (
-              <button
-                key={t.key}
-                onClick={() => applyTemplate(t)}
-                className="rounded-full border border-white/15 px-3 py-1 text-xs text-white/80 hover:bg-white/10"
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-          <InputForm key={preset?.industry ?? "blank"} onSubmit={handleSubmit} loading={loading} initial={preset} />
+          {loading ? (
+            <SkeletonResults />
+          ) : (
+            <>
+              <div className="flex flex-wrap gap-2">
+                <span className="self-center text-xs text-white/40">Templates:</span>
+                {TEMPLATES.map((t) => (
+                  <button
+                    key={t.key}
+                    onClick={() => applyTemplate(t)}
+                    className="rounded-full border border-white/15 px-3 py-1 text-xs text-white/80 hover:bg-white/10"
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              <InputForm key={preset?.industry ?? "blank"} onSubmit={handleSubmit} loading={loading} initial={preset} />
+            </>
+          )}
         </div>
       ) : (
         <Results
@@ -269,9 +278,7 @@ export default function Home() {
         />
       )}
 
-      {saved && (
-        <p className="no-print mt-4 text-center text-sm text-emerald-300">Saved to history.</p>
-      )}
+      {toast && <Toast message={toast} onDone={() => setToast(null)} />}
     </main>
   );
 }
