@@ -92,6 +92,25 @@ export default function Results({
         />
       )}
 
+      {data.analysis && (data.analysis.overlaps.length > 0 || data.analysis.notes) && (
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <h3 className="mb-2 text-sm font-semibold text-white">Market research analysis</h3>
+          {data.analysis.overlaps.map((o, i) => {
+            const a = data.personas.find((p) => p.id === o.personas[0])?.name ?? o.personas[0];
+            const b = data.personas.find((p) => p.id === o.personas[1])?.name ?? o.personas[1];
+            return (
+              <div key={i} className="mb-2 rounded-lg border border-amber-400/30 bg-amber-500/10 p-3 text-sm">
+                <span className="font-medium text-amber-200">Overlap {o.score}%: {a} ↔ {b}</span>
+                <p className="text-white/70">{o.reason}</p>
+              </div>
+            );
+          })}
+          {data.analysis.notes && (
+            <p className="text-sm text-white/70">{data.analysis.notes}</p>
+          )}
+        </div>
+      )}
+
       {view === "compare" ? (
         <Compare personas={ordered} />
       ) : (
@@ -128,7 +147,7 @@ function PersonaCard({
   readOnly: boolean;
   onRefine: (p: Persona) => void;
 }) {
-  const [tab, setTab] = useState<"profile" | "playbook">("profile");
+  const [tab, setTab] = useState<"profile" | "playbook" | "research">("profile");
   const [showRefine, setShowRefine] = useState(false);
   const [instruction, setInstruction] = useState("");
   const [busy, setBusy] = useState(false);
@@ -217,7 +236,7 @@ function PersonaCard({
       )}
 
       <div className="no-print flex gap-1 border-b border-white/10 px-3 pt-3 text-sm">
-        {(["profile", "playbook"] as const).map((t) => (
+        {(["profile", "playbook", "research"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -225,7 +244,7 @@ function PersonaCard({
               tab === t ? "bg-white/10 text-white" : "text-white/50 hover:text-white/80"
             }`}
           >
-            {t === "playbook" ? "Live Playbook" : "Profile"}
+            {t === "research" ? "Research" : t === "playbook" ? "Live Playbook" : "Profile"}
           </button>
         ))}
       </div>
@@ -236,6 +255,9 @@ function PersonaCard({
         </div>
         <div className={tab === "playbook" ? "block print:block" : "hidden print:block"}>
           <Playbook persona={persona} />
+        </div>
+        <div className={tab === "research" ? "block print:block" : "hidden print:block"}>
+          <Research persona={persona} />
         </div>
       </div>
     </div>
@@ -337,6 +359,81 @@ function Playbook({ persona }: { persona: Persona }) {
           </ul>
         </div>
       </div>
+    </div>
+  );
+}
+
+function Research({ persona }: { persona: Persona }) {
+  const e = persona.empathy;
+  const c = persona.confidence;
+  const m = persona.marketSizing;
+  const comp = persona.competitive;
+  return (
+    <div className="space-y-4 text-sm">
+      {c && (
+        <div className="rounded-lg border border-white/10 bg-black/20 p-3">
+          <span className="text-xs uppercase tracking-wide text-white/40">Confidence </span>
+          <span className={`font-semibold ${c.basis === "data" ? "text-emerald-300" : "text-amber-300"}`}>
+            {c.score}/100 · {c.basis}
+          </span>
+          <p className="text-white/70">{c.note}</p>
+        </div>
+      )}
+
+      {persona.jtbd && persona.jtbd.length > 0 && (
+        <Group title="Jobs-to-be-Done" items={persona.jtbd} />
+      )}
+
+      {e && (
+        <div className="grid gap-2 sm:grid-cols-2">
+          <EmpathyCell label="Says" items={e.says} />
+          <EmpathyCell label="Thinks" items={e.thinks} />
+          <EmpathyCell label="Does" items={e.does} />
+          <EmpathyCell label="Feels" items={e.feels} />
+        </div>
+      )}
+
+      {m && (
+        <div className="grid gap-2 sm:grid-cols-3">
+          <div className="rounded-lg border border-white/10 bg-black/20 p-2">
+            <div className="text-xs text-white/40">TAM</div>
+            <div className="text-white/90">{m.tam}</div>
+          </div>
+          <div className="rounded-lg border border-white/10 bg-black/20 p-2">
+            <div className="text-xs text-white/40">SAM</div>
+            <div className="text-white/90">{m.sam}</div>
+          </div>
+          <div className="rounded-lg border border-white/10 bg-black/20 p-2">
+            <div className="text-xs text-white/40">SOM</div>
+            <div className="text-white/90">{m.som}</div>
+          </div>
+        </div>
+      )}
+
+      {comp && (
+        <div>
+          <h4 className="mb-1 text-xs uppercase tracking-wide text-white/40">Competitors</h4>
+          <ul className="list-disc pl-4 text-white/70">
+            {comp.competitors.map((x, i) => (
+              <li key={i}>{x}</li>
+            ))}
+          </ul>
+          <p className="mt-2 text-white/70"><span className="text-white/50">White space: </span>{comp.whiteSpace}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EmpathyCell({ label, items }: { label: string; items: string[] }) {
+  return (
+    <div className="rounded-lg border border-white/10 bg-black/20 p-2">
+      <div className="mb-1 text-xs uppercase tracking-wide text-white/40">{label}</div>
+      <ul className="list-disc pl-4 text-white/70">
+        {items.map((it, i) => (
+          <li key={i}>{it}</li>
+        ))}
+      </ul>
     </div>
   );
 }

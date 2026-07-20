@@ -32,6 +32,41 @@ export interface Playbook {
   adHooks: string[];
 }
 
+export interface Empathy {
+  says: string[];
+  thinks: string[];
+  does: string[];
+  feels: string[];
+}
+
+export interface Confidence {
+  score: number;
+  basis: "data" | "inferred";
+  note: string;
+}
+
+export interface MarketSizing {
+  tam: string;
+  sam: string;
+  som: string;
+}
+
+export interface Competitive {
+  competitors: string[];
+  whiteSpace: string;
+}
+
+export interface Overlap {
+  personas: [string, string];
+  score: number;
+  reason: string;
+}
+
+export interface Analysis {
+  overlaps: Overlap[];
+  notes: string;
+}
+
 export interface Persona {
   id: string;
   name: string;
@@ -41,6 +76,11 @@ export interface Persona {
     score: number;
     reason: string;
   };
+  empathy?: Empathy;
+  jtbd?: string[];
+  confidence?: Confidence;
+  marketSizing?: MarketSizing;
+  competitive?: Competitive;
   demographics: Demographics;
   psychographics: Psychographics;
   painPoints: string[];
@@ -67,6 +107,7 @@ export interface GenerateRequest {
 export interface GenerateResponse {
   businessSummary: string;
   personas: Persona[];
+  analysis?: Analysis;
 }
 
 export interface RefineRequest {

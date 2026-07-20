@@ -46,6 +46,30 @@ export default function Compare({ personas }: { personas: Persona[] }) {
           <Row label="Goals" values={personas.map((p) => join(p.goals))} />
           <Row label="Tone" values={personas.map((p) => p.messaging.tone)} />
           <Row label="Hook" values={personas.map((p) => p.messaging.hook)} />
+          <Row
+            label="Confidence"
+            values={personas.map((p) =>
+              p.confidence ? `${p.confidence.score} (${p.confidence.basis})` : "—"
+            )}
+          />
+          <Row
+            label="Market (TAM/SAM/SOM)"
+            values={personas.map((p) =>
+              p.marketSizing
+                ? `${p.marketSizing.tam} / ${p.marketSizing.sam} / ${p.marketSizing.som}`
+                : "—"
+            )}
+          />
+          <Row
+            label="Competitors"
+            values={personas.map((p) =>
+              p.competitive ? p.competitive.competitors.join(", ") : "—"
+            )}
+          />
+          <Row
+            label="White space"
+            values={personas.map((p) => (p.competitive ? p.competitive.whiteSpace : "—"))}
+          />
         </tbody>
       </table>
     </div>

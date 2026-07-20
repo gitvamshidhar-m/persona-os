@@ -34,6 +34,27 @@ Return JSON matching this exact schema:
         "score": number,              // 0-100 (value x reachability for the goals)
         "reason": string              // one-line rationale
       },
+      "empathy": {                    // empathy map
+        "says": string[],             // what they say out loud
+        "thinks": string[],           // what they think privately
+        "does": string[],             // what they do
+        "feels": string[]             // what they feel
+      },
+      "jtbd": string[],               // jobs-to-be-done: jobs they'd hire the product to do
+      "confidence": {                 // how evidence-backed this persona is
+        "score": number,              // 0-100
+        "basis": "data" | "inferred", // "data" only if user supplied real data
+        "note": string                // why
+      },
+      "marketSizing": {               // reasoned reachable-market ranges
+        "tam": string,                // total addressable market (text/range)
+        "sam": string,                // serviceable available market
+        "som": string                 // serviceable obtainable market (realistic near-term)
+      },
+      "competitive": {
+        "competitors": string[],      // who else targets this persona
+        "whiteSpace": string          // positioning gap to exploit
+      },
       "demographics": {
         "ageRange": string,
         "location": string,
@@ -71,7 +92,19 @@ Requirements:
 - Make each persona specific to the industry, not generic.
 - The weeklyPlan must be concrete (real channels, real formats, real topics, real CTAs).
 - Set "priority.score" by weighing expected customer value against how reachable/addressable they are for the stated goals (higher = target first).
-- If data was provided, reflect its language and real objections.`;
+- Keep personas genuinely distinct. If two personas overlap heavily, differentiate them clearly (role, need, or channel).
+- Set "confidence.basis" to "data" ONLY when the user supplied real data that supports this persona; otherwise "inferred". Never fake precision in marketSizing — use reasoned ranges.
+- If data was provided, reflect its language and real objections.
+
+Also return a top-level "analysis" object with this schema (alongside "businessSummary" and "personas"):
+{
+  "analysis": {
+    "overlaps": [                       // only list pairs with notable overlap
+      { "personas": [string, string], "score": number, "reason": string }
+    ],
+    "notes": string                    // segmenting advice for the market
+  }
+}`;
 }
 
 export function buildRefinePrompt(req: RefineRequest): string {
