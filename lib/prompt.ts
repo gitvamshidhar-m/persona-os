@@ -1,4 +1,4 @@
-import { GenerateRequest } from "./types";
+import { GenerateRequest, RefineRequest, SimulateRequest } from "./types";
 
 export const SYSTEM_PROMPT = `You are a world-class digital marketing strategist and consumer psychologist.
 Given a business, you produce realistic, nuanced buyer personas and a ready-to-run marketing playbook for each one.
@@ -67,4 +67,58 @@ Requirements:
 - Make each persona specific to the industry, not generic.
 - The weeklyPlan must be concrete (real channels, real formats, real topics, real CTAs).
 - If data was provided, reflect its language and real objections.`;
+}
+
+export function buildRefinePrompt(req: RefineRequest): string {
+  return `Refine ONE existing buyer persona based on the user's instruction.
+
+BUSINESS SUMMARY: ${req.businessSummary}
+
+EXISTING PERSONA (JSON):
+${JSON.stringify(req.persona, null, 2)}
+
+INSTRUCTION FROM USER: ${req.instruction}
+
+Return the FULL updated persona as a single JSON object using the exact same schema as the existing persona
+(keep the same "id", preserve fields the instruction does not change). Make the change coherent with the business.
+No markdown, no commentary — just the JSON object.`;
+}
+
+export function buildSimulatePrompt(req: SimulateRequest): string {
+  const personas = req.personas
+    .map(
+      (p) =>
+        `- id: ${p.id} | name: ${p.name} (${p.tagline}) | pains: ${p.painPoints.join(
+          ", "
+        )} | goals: ${p.goals.join(", ")} | objections: ${p.messaging.objections.join(", ")}`
+    )
+    .join("\n");
+
+  return `Simulate how each buyer persona would react to a marketing campaign.
+
+BUSINESS SUMMARY: ${req.businessSummary}
+
+CAMPAIGN / COPY BEING TESTED:
+""'
+${req.campaign}
+"""
+
+PERSONAS:
+${personas}
+
+Return JSON with this exact schema:
+{
+  "reactions": [
+    {
+      "personaId": string,            // match the id above
+      "interest": number,             // 0-100 predicted interest
+      "likelyToConvert": "high" | "medium" | "low",
+      "triggeredObjections": string[], // which of their objections this campaign triggers
+      "reaction": string,             // 1-2 sentence predicted reaction in their voice
+      "suggestedTweak": string        // concrete edit to improve resonance for them
+    }
+  ]
+}
+
+Be realistic and specific to each persona. No markdown, just the JSON.`;
 }

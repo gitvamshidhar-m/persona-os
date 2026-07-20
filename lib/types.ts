@@ -65,6 +65,40 @@ export interface GenerateResponse {
   personas: Persona[];
 }
 
+export interface RefineRequest {
+  businessSummary: string;
+  persona: Persona;
+  instruction: string;
+  model: string;
+}
+
+export interface SimulateRequest {
+  businessSummary: string;
+  campaign: string;
+  personas: { id: string; name: string; tagline: string; painPoints: string[]; goals: string[]; messaging: Persona["messaging"] }[];
+  model: string;
+}
+
+export interface PersonaReaction {
+  personaId: string;
+  interest: number;
+  likelyToConvert: "high" | "medium" | "low";
+  triggeredObjections: string[];
+  reaction: string;
+  suggestedTweak: string;
+}
+
+export interface SimulateResponse {
+  reactions: PersonaReaction[];
+}
+
+export interface SavedBuild {
+  id: string;
+  name: string;
+  createdAt: number;
+  response: GenerateResponse;
+}
+
 export const EMPTY_RESPONSE: GenerateResponse = {
   businessSummary: "",
   personas: [],
