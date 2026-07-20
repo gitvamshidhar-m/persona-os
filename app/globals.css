@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0a0f;
-  --foreground: #ededed;
+  --background: #ffffff;
+  --foreground: #0f172a;
 }
 
 @theme inline {
@@ -12,13 +12,27 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Light theme: invert the default white/black tokens and tune accent text */
+@theme {
+  --color-white: #0f172a;
+  --color-black: #f8fafc;
+  --color-emerald-300: #047857;
+  --color-amber-200: #b45309;
+  --color-amber-300: #b45309;
+  --color-red-200: #b91c1c;
+  --color-red-300: #dc2626;
+  --color-indigo-200: #4338ca;
+  --color-indigo-300: #4338ca;
+  --color-indigo-400: #4f46e5;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
   background-image:
-    radial-gradient(60rem 60rem at 15% -10%, rgba(99, 102, 241, 0.18), transparent 60%),
-    radial-gradient(50rem 50rem at 100% 0%, rgba(56, 189, 248, 0.12), transparent 55%);
+    radial-gradient(60rem 60rem at 15% -10%, rgba(99, 102, 241, 0.10), transparent 60%),
+    radial-gradient(50rem 50rem at 100% 0%, rgba(56, 189, 248, 0.08), transparent 55%);
   background-attachment: fixed;
 }
 

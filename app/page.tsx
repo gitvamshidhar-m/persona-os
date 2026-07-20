@@ -177,10 +177,10 @@ export default function Home() {
       <header className="no-print mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold sm:text-4xl">
-            <span className="bg-gradient-to-r from-indigo-300 via-white to-sky-300 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-indigo-600 via-slate-700 to-sky-600 bg-clip-text text-transparent">
               Persona
             </span>{" "}
-            <span className="text-indigo-400">OS</span>
+            <span className="text-indigo-600">OS</span>
           </h1>
           <p className="mt-2 max-w-xl text-sm text-white/60">
             Describe any business. Get buyer personas + live marketing playbooks — for any industry.

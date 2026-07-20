@@ -144,7 +144,7 @@ export default function InputForm({
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-xl bg-indigo-500 py-3 font-semibold text-white transition hover:bg-indigo-400 disabled:opacity-50"
+        className="w-full rounded-xl bg-indigo-500 py-3 font-semibold text-[#ffffff] transition hover:bg-indigo-400 disabled:opacity-50"
       >
         {loading ? "Building personas…" : "Generate personas & playbooks"}
       </button>
