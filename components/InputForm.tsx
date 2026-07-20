@@ -14,6 +14,12 @@ export interface FormState {
 
 const DEFAULT_MODEL = "openai/gpt-4o-mini";
 
+const QUICK_MODELS = [
+  { id: "openai/gpt-4o-mini", label: "🎯 Balanced" },
+  { id: "google/gemini-2.0-flash-exp:free", label: "⚡ Fast (free)" },
+  { id: "meta-llama/llama-3.1-8b-instruct:free", label: "🪶 Tiny (free)" },
+];
+
 export default function InputForm({
   onSubmit,
   loading,
@@ -139,6 +145,23 @@ export default function InputForm({
           <span className="text-white/60">meta-llama/llama-3.1-8b-instruct:free</span>,{" "}
           <span className="text-white/60">google/gemma-2-9b-it:free</span>
         </p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <span className="self-center text-xs text-white/40">Quick pick:</span>
+          {QUICK_MODELS.map((m) => (
+            <button
+              type="button"
+              key={m.id}
+              onClick={() => set("model", m.id)}
+              className={`rounded-full border px-2.5 py-1 text-xs ${
+                form.model === m.id
+                  ? "border-indigo-400 bg-indigo-500/20 text-indigo-700"
+                  : "border-white/15 text-white/70 hover:bg-white/10"
+              }`}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
       </Field>
 
       <button
