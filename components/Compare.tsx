@@ -31,6 +31,12 @@ export default function Compare({ personas }: { personas: Persona[] }) {
           </tr>
         </thead>
         <tbody>
+          <Row
+            label="Priority"
+            values={personas.map((p) =>
+              p.priority ? `${p.priority.score} — ${p.priority.reason}` : "—"
+            )}
+          />
           <Row label="Age" values={personas.map((p) => p.demographics.ageRange)} />
           <Row label="Role" values={personas.map((p) => p.demographics.role)} />
           <Row label="Location" values={personas.map((p) => p.demographics.location)} />

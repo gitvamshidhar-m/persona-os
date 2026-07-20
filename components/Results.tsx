@@ -28,6 +28,12 @@ export default function Results({
 }: ResultsProps) {
   const [view, setView] = useState<"cards" | "compare">("cards");
   const [showSim, setShowSim] = useState(false);
+  const [sortPrio, setSortPrio] = useState(false);
+
+  const hasPriority = data.personas.some((p) => p.priority);
+  const ordered = sortPrio
+    ? [...data.personas].sort((a, b) => (b.priority?.score ?? 0) - (a.priority?.score ?? 0))
+    : data.personas;
 
   const download = () => {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -39,23 +45,31 @@ export default function Results({
     URL.revokeObjectURL(url);
   };
 
+  const pdf = () => window.print();
+
   return (
     <div className="space-y-6">
       {readOnly && (
-        <div className="rounded-xl border border-indigo-400/30 bg-indigo-500/10 px-4 py-2 text-sm text-indigo-200">
+        <div className="no-print rounded-xl border border-indigo-400/30 bg-indigo-500/10 px-4 py-2 text-sm text-indigo-200">
           Viewing a shared build (read-only). Make a copy by clicking <span className="font-semibold">New</span>.
         </div>
       )}
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <p className="max-w-2xl text-sm text-white/70">{data.businessSummary}</p>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 no-print">
           <button onClick={() => setView(view === "cards" ? "compare" : "cards")} className={btn}>
             {view === "cards" ? "Compare" : "Cards"}
           </button>
           <button onClick={() => setShowSim((s) => !s)} className={btn}>
             {showSim ? "Hide sim" : "Simulate"}
           </button>
+          {hasPriority && (
+            <button onClick={() => setSortPrio((s) => !s)} className={btn}>
+              {sortPrio ? "Default order" : "Sort by priority"}
+            </button>
+          )}
+          <button onClick={pdf} className={btn}>PDF</button>
           <button onClick={download} className={btn}>Export JSON</button>
           {!readOnly && <button onClick={onSave} className={btn}>Save</button>}
           <button onClick={onShare} className={btn}>{shared ? "Link copied" : "Share link"}</button>
@@ -79,10 +93,10 @@ export default function Results({
       )}
 
       {view === "compare" ? (
-        <Compare personas={data.personas} />
+        <Compare personas={ordered} />
       ) : (
         <div className="grid gap-5 lg:grid-cols-2">
-          {data.personas.map((p) => (
+          {ordered.map((p) => (
             <PersonaCard
               key={p.id}
               persona={p}
@@ -148,14 +162,30 @@ function PersonaCard({
         <div className="flex items-center gap-3">
           <div className="text-3xl">{persona.avatar}</div>
           <div>
-            <h3 className="text-lg font-semibold text-white">{persona.name}</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-white">{persona.name}</h3>
+              {persona.priority && (
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                    persona.priority.score >= 70
+                      ? "bg-emerald-500/20 text-emerald-300"
+                      : persona.priority.score >= 40
+                      ? "bg-amber-500/20 text-amber-300"
+                      : "bg-white/10 text-white/60"
+                  }`}
+                  title={persona.priority.reason}
+                >
+                  {persona.priority.score}
+                </span>
+              )}
+            </div>
             <p className="text-xs text-white/60">{persona.tagline}</p>
           </div>
         </div>
         {!readOnly && (
           <button
             onClick={() => setShowRefine((s) => !s)}
-            className="rounded-lg border border-white/15 px-2 py-1 text-xs text-white/70 hover:bg-white/10"
+            className="no-print rounded-lg border border-white/15 px-2 py-1 text-xs text-white/70 hover:bg-white/10"
           >
             Refine
           </button>
@@ -186,7 +216,7 @@ function PersonaCard({
         </div>
       )}
 
-      <div className="flex gap-1 border-b border-white/10 px-3 pt-3 text-sm">
+      <div className="no-print flex gap-1 border-b border-white/10 px-3 pt-3 text-sm">
         {(["profile", "playbook"] as const).map((t) => (
           <button
             key={t}
@@ -201,7 +231,12 @@ function PersonaCard({
       </div>
 
       <div className="p-4">
-        {tab === "profile" ? <Profile persona={persona} /> : <Playbook persona={persona} />}
+        <div className={tab === "profile" ? "block print:block" : "hidden print:block"}>
+          <Profile persona={persona} />
+        </div>
+        <div className={tab === "playbook" ? "block print:block" : "hidden print:block"}>
+          <Playbook persona={persona} />
+        </div>
       </div>
     </div>
   );
@@ -211,6 +246,13 @@ function Profile({ persona }: { persona: Persona }) {
   const d = persona.demographics;
   return (
     <div className="space-y-4 text-sm">
+      {persona.priority && (
+        <div className="rounded-lg border border-indigo-400/30 bg-indigo-500/10 p-2">
+          <span className="text-xs uppercase tracking-wide text-white/40">Priority </span>
+          <span className="font-semibold text-white">{persona.priority.score}/100</span>
+          <p className="text-white/70">{persona.priority.reason}</p>
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-2 text-xs">
         <Stat k="Age" v={d.ageRange} />
         <Stat k="Role" v={d.role} />

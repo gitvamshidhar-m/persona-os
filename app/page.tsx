@@ -106,7 +106,7 @@ export default function Home() {
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-10">
-      <header className="mb-6 flex items-start justify-between gap-3">
+      <header className="no-print mb-6 flex items-start justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold text-white">
             Persona <span className="text-indigo-400">OS</span>
@@ -127,7 +127,7 @@ export default function Home() {
       )}
 
       {showHistory && (
-        <div className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div className="no-print mb-6 rounded-2xl border border-white/10 bg-white/5 p-4">
           <div className="mb-2 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-white">Saved builds</h3>
             <button onClick={() => setShowHistory(false)} className="text-xs text-white/50">Close</button>
@@ -170,7 +170,7 @@ export default function Home() {
       )}
 
       {saved && (
-        <p className="mt-4 text-center text-sm text-emerald-300">Saved to history.</p>
+        <p className="no-print mt-4 text-center text-sm text-emerald-300">Saved to history.</p>
       )}
     </main>
   );

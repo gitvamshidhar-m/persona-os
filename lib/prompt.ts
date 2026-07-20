@@ -30,6 +30,10 @@ Return JSON matching this exact schema:
       "name": string,                  // memorable persona name
       "tagline": string,               // one-line identity
       "avatar": string,                // an emoji representing them
+      "priority": {                   // how important to target first
+        "score": number,              // 0-100 (value x reachability for the goals)
+        "reason": string              // one-line rationale
+      },
       "demographics": {
         "ageRange": string,
         "location": string,
@@ -66,6 +70,7 @@ Requirements:
 - Produce 3 to 4 distinct personas that cover the realistic spread of the market.
 - Make each persona specific to the industry, not generic.
 - The weeklyPlan must be concrete (real channels, real formats, real topics, real CTAs).
+- Set "priority.score" by weighing expected customer value against how reachable/addressable they are for the stated goals (higher = target first).
 - If data was provided, reflect its language and real objections.`;
 }
 

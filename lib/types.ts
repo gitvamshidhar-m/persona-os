@@ -37,6 +37,10 @@ export interface Persona {
   name: string;
   tagline: string;
   avatar: string;
+  priority?: {
+    score: number;
+    reason: string;
+  };
   demographics: Demographics;
   psychographics: Psychographics;
   painPoints: string[];
