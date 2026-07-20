@@ -1,6 +1,7 @@
 "use client";
 
 import { Persona } from "@/lib/types";
+import { cleanAvatar } from "@/lib/avatar";
 
 function Row({ label, values }: { label: string; values: string[] }) {
   return (
@@ -23,7 +24,7 @@ export default function Compare({ personas }: { personas: Persona[] }) {
             <th className="px-3 py-2" />
             {personas.map((p) => (
               <th key={p.id} className="px-3 py-2 text-left">
-                <div className="text-2xl">{p.avatar}</div>
+                <div className="text-2xl">{cleanAvatar(p.avatar)}</div>
                 <div className="text-sm font-semibold text-white">{p.name}</div>
                 <div className="text-xs text-white/50">{p.tagline}</div>
               </th>

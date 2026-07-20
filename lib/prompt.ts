@@ -66,6 +66,7 @@ Return JSON matching this exact schema:
 Requirements:
 - Produce exactly 3 distinct personas that cover the realistic spread of the market.
 - Make each persona specific to the industry, not generic.
+- Give each persona a DIFFERENT avatar emoji (no two personas should share the same emoji).
 - Be concise: keep each list to 3-5 items and each sentence/string to one short phrase. No padding.
 - The weeklyPlan must be concrete (real channels, real formats, real topics, real CTAs).
 - Set "priority.score" by weighing expected customer value against how reachable/addressable they are for the stated goals (higher = target first).
