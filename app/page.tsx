@@ -20,6 +20,7 @@ export default function Home() {
   const [model, setModel] = useState("openai/gpt-4o-mini");
   const [shared, setShared] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [liveText, setLiveText] = useState("");
 
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState<SavedBuild[]>([]);
@@ -53,20 +54,63 @@ export default function Home() {
     setLoading(true);
     setError(null);
     setReadOnly(false);
-    try {
+    setLiveText("");
+
+    const runOnce = async (): Promise<GenerateResponse | null> => {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Generation failed");
-      setResult(json as GenerateResponse);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong");
-    } finally {
-      setLoading(false);
+      if (!res.ok || !res.body) {
+        const j = await res.json().catch(() => ({}) as { error?: string });
+        throw new Error(j.error || "Generation failed");
+      }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      let full = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() ?? "";
+        for (const line of lines) {
+          const t = line.trim();
+          if (!t.startsWith("data:")) continue;
+          const payload = t.slice(5).trim();
+          if (!payload) continue;
+          try {
+            const obj = JSON.parse(payload);
+            if (obj.token) {
+              full += obj.token;
+              setLiveText(full);
+            } else if (obj.done) {
+              full = obj.full || full;
+            } else if (obj.error) {
+              throw new Error(obj.error);
+            }
+          } catch (e) {
+            if (e instanceof Error && e.message) throw e;
+          }
+        }
+      }
+      return parseGenerated(full);
+    };
+
+    let result: GenerateResponse | null = null;
+    let lastErr = "";
+    for (let attempt = 0; attempt < 3 && !result; attempt++) {
+      try {
+        result = await runOnce();
+      } catch (e) {
+        lastErr = e instanceof Error ? e.message : "Error";
+      }
     }
+    if (result) setResult(result);
+    else setError(lastErr || "Generation failed");
+    setLoading(false);
   };
 
   const handleRefine = (persona: Persona) => {
@@ -246,7 +290,11 @@ export default function Home() {
       {!hasResult ? (
         <div className="space-y-4">
           {loading ? (
-            <SkeletonResults />
+            liveText ? (
+              <LivePanel text={liveText} />
+            ) : (
+              <SkeletonResults />
+            )
           ) : (
             <>
               <div className="flex flex-wrap gap-2">
@@ -281,4 +329,37 @@ export default function Home() {
       {toast && <Toast message={toast} onDone={() => setToast(null)} />}
     </main>
   );
+}
+
+function LivePanel({ text }: { text: string }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+      <div className="mb-2 flex items-center gap-2 text-sm text-indigo-600">
+        <span className="h-2 w-2 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
+        Generating personas…
+      </div>
+      <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words font-mono text-xs text-slate-500">
+        {text}
+        <span className="ml-0.5 inline-block h-3 w-1.5 animate-pulse bg-slate-400 align-middle" />
+      </pre>
+    </div>
+  );
+}
+
+function parseGenerated(content: string): GenerateResponse | null {
+  let parsed: GenerateResponse;
+  try {
+    parsed = JSON.parse(content) as GenerateResponse;
+  } catch {
+    const s = content.indexOf("{");
+    const e = content.lastIndexOf("}");
+    if (s < 0 || e < 0) return null;
+    try {
+      parsed = JSON.parse(content.slice(s, e + 1)) as GenerateResponse;
+    } catch {
+      return null;
+    }
+  }
+  if (!parsed.personas || parsed.personas.length === 0) return null;
+  return parsed;
 }

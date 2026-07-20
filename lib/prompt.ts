@@ -64,8 +64,9 @@ Return JSON matching this exact schema:
 }
 
 Requirements:
-- Produce 3 to 4 distinct personas that cover the realistic spread of the market.
+- Produce exactly 3 distinct personas that cover the realistic spread of the market.
 - Make each persona specific to the industry, not generic.
+- Be concise: keep each list to 3-5 items and each sentence/string to one short phrase. No padding.
 - The weeklyPlan must be concrete (real channels, real formats, real topics, real CTAs).
 - Set "priority.score" by weighing expected customer value against how reachable/addressable they are for the stated goals (higher = target first).
 - Keep personas genuinely distinct. If two personas overlap heavily, differentiate them clearly.
