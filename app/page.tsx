@@ -200,8 +200,23 @@ export default function Home() {
       {showHistory && (
         <div className="no-print mb-6 rounded-2xl border border-white/10 bg-white/5 p-4">
           <div className="mb-2 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-white">Saved builds</h3>
-            <button onClick={() => setShowHistory(false)} className="text-xs text-white/50">Close</button>
+            <h3 className="text-sm font-semibold text-white">
+              Saved builds
+              {supabase && userEmail && (
+                <span className="ml-2 rounded-full bg-indigo-500/20 px-2 py-0.5 text-[10px] font-medium text-indigo-300">
+                  Cloud
+                </span>
+              )}
+              {!(supabase && userEmail) && (
+                <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-medium text-white/50">
+                  Local
+                </span>
+              )}
+            </h3>
+            <div className="flex items-center gap-3">
+              <button onClick={openHistory} className="text-xs text-white/50 hover:text-white/80">Refresh</button>
+              <button onClick={() => setShowHistory(false)} className="text-xs text-white/50">Close</button>
+            </div>
           </div>
           {history.length === 0 ? (
             <p className="text-sm text-white/50">No saved builds yet. Generate personas and click Save.</p>
