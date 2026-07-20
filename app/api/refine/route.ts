@@ -30,25 +30,49 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const content = await callOpenRouter(apiKey, model, [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: buildRefinePrompt(body) },
-    ]);
+    const messages = [
+      { role: "system" as const, content: SYSTEM_PROMPT },
+      { role: "user" as const, content: buildRefinePrompt(body) },
+    ];
 
-    let parsed: Persona;
-    try {
-      parsed = JSON.parse(content) as Persona;
-    } catch {
-      const start = content.indexOf("{");
-      const end = content.lastIndexOf("}");
-      if (start < 0 || end < 0) throw new Error("Model did not return valid JSON.");
-      parsed = JSON.parse(content.slice(start, end + 1)) as Persona;
+    let parsed: Persona | null = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const content = await callOpenRouter(apiKey, model, messages);
+      try {
+        parsed = parsePersona(content);
+      } catch {
+        continue;
+      }
+      if (
+        parsed.empathy &&
+        parsed.jtbd?.length &&
+        parsed.confidence &&
+        parsed.marketSizing &&
+        parsed.competitive &&
+        parsed.validation
+      ) {
+        break;
+      }
     }
 
+    if (!parsed) throw new Error("Model did not return valid JSON.");
     parsed.id = body.persona.id;
     return NextResponse.json(parsed);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 502 });
   }
+}
+
+function parsePersona(content: string): Persona {
+  let parsed: Persona;
+  try {
+    parsed = JSON.parse(content) as Persona;
+  } catch {
+    const start = content.indexOf("{");
+    const end = content.lastIndexOf("}");
+    if (start < 0 || end < 0) throw new Error("Model did not return valid JSON.");
+    parsed = JSON.parse(content.slice(start, end + 1)) as Persona;
+  }
+  return parsed;
 }
