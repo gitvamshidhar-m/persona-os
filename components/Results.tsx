@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Persona, GenerateResponse, ABResponse, ABResult, ContentResponse } from "@/lib/types";
 import Compare from "./Compare";
 import Simulate from "./Simulate";
@@ -174,6 +174,7 @@ function PersonaCard({
   const [instruction, setInstruction] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
 
   const doRefine = async () => {
     if (!instruction.trim() || busy) return;
@@ -226,6 +227,12 @@ function PersonaCard({
         {!readOnly && (
           <>
             <button
+              onClick={() => setEditing(true)}
+              className="no-print rounded-lg border border-white/15 px-2 py-1 text-xs text-white/70 hover:bg-white/10"
+            >
+              ✎ Edit
+            </button>
+            <button
               onClick={() => setShowContent((s) => !s)}
               className="no-print rounded-lg border border-white/15 px-2 py-1 text-xs text-white/70 hover:bg-white/10"
             >
@@ -274,32 +281,474 @@ function PersonaCard({
         />
       )}
 
-      <div className="no-print flex gap-1 border-b border-white/10 px-3 pt-3 text-sm">
-        {(["profile", "playbook", "research"] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`rounded-t-lg px-3 py-2 capitalize ${
-              tab === t ? "bg-white/10 text-white" : "text-white/50 hover:text-white/80"
-            }`}
-          >
-            {t === "research" ? "Research" : t === "playbook" ? "Live Playbook" : "Profile"}
-          </button>
-        ))}
+      {editing ? (
+        <PersonaEditor
+          persona={persona}
+          onSave={(p) => {
+            onRefine(p);
+            setEditing(false);
+          }}
+          onCancel={() => setEditing(false)}
+        />
+      ) : (
+        <>
+          <div className="no-print flex gap-1 border-b border-white/10 px-3 pt-3 text-sm">
+            {(["profile", "playbook", "research"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`rounded-t-lg px-3 py-2 capitalize ${
+                  tab === t ? "bg-white/10 text-white" : "text-white/50 hover:text-white/80"
+                }`}
+              >
+                {t === "research" ? "Research" : t === "playbook" ? "Live Playbook" : "Profile"}
+              </button>
+            ))}
+          </div>
+
+          <div className="p-4">
+            <div className={tab === "profile" ? "block print:block" : "hidden print:block"}>
+              <Profile persona={persona} />
+            </div>
+            <div className={tab === "playbook" ? "block print:block" : "hidden print:block"}>
+              <Playbook persona={persona} />
+            </div>
+            <div className={tab === "research" ? "block print:block" : "hidden print:block"}>
+              <Research persona={persona} />
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function PersonaEditor({
+  persona,
+  onSave,
+  onCancel,
+}: {
+  persona: Persona;
+  onSave: (p: Persona) => void;
+  onCancel: () => void;
+}) {
+  const [d, setD] = useState<Persona>(() => structuredClone(persona));
+  const set = (patch: Partial<Persona>) => setD({ ...d, ...patch });
+  const emp = () => d.empathy ?? { says: [], thinks: [], does: [], feels: [] };
+  const conf = () => d.confidence ?? { score: 0, basis: "inferred" as const, note: "" };
+  const ms = () => d.marketSizing ?? { tam: "", sam: "", som: "" };
+  const comp = () => d.competitive ?? { competitors: [], whiteSpace: "" };
+  const val = () =>
+    d.validation ?? { discussionGuide: [], surveyQuestions: [], recruit: "", sampleSize: "" };
+  const pri = () => d.priority ?? { score: 0, reason: "" };
+
+  const inputCls =
+    "w-full rounded-lg border border-white/15 bg-black/30 px-2 py-1 text-sm text-white outline-none focus:border-indigo-400";
+  const areaCls = `${inputCls} min-h-[60px]`;
+  const labelCls = "mb-1 block text-xs uppercase tracking-wide text-white/40";
+  const field = (label: string, node: ReactNode) => (
+    <label className="block">
+      <span className={labelCls}>{label}</span>
+      {node}
+    </label>
+  );
+
+  return (
+    <div className="space-y-4 p-4 text-sm">
+      <div className="grid gap-3 sm:grid-cols-2">
+        {field(
+          "Name",
+          <input className={inputCls} value={d.name} onChange={(e) => set({ name: e.target.value })} />
+        )}
+        {field(
+          "Tagline",
+          <input className={inputCls} value={d.tagline} onChange={(e) => set({ tagline: e.target.value })} />
+        )}
+        {field(
+          "Avatar (emoji)",
+          <input className={inputCls} value={d.avatar} onChange={(e) => set({ avatar: e.target.value })} />
+        )}
+        {field(
+          "Priority score",
+          <input
+            type="number"
+            className={inputCls}
+            value={pri().score}
+            onChange={(e) => set({ priority: { ...pri(), score: Number(e.target.value) || 0 } })}
+          />
+        )}
+        {field(
+          "Priority reason",
+          <input
+            className={inputCls}
+            value={pri().reason}
+            onChange={(e) => set({ priority: { ...pri(), reason: e.target.value } })}
+          />
+        )}
       </div>
 
-      <div className="p-4">
-        <div className={tab === "profile" ? "block print:block" : "hidden print:block"}>
-          <Profile persona={persona} />
+      <div className="grid gap-3 sm:grid-cols-2">
+        {field(
+          "Age",
+          <input
+            className={inputCls}
+            value={d.demographics.ageRange}
+            onChange={(e) => set({ demographics: { ...d.demographics, ageRange: e.target.value } })}
+          />
+        )}
+        {field(
+          "Role",
+          <input
+            className={inputCls}
+            value={d.demographics.role}
+            onChange={(e) => set({ demographics: { ...d.demographics, role: e.target.value } })}
+          />
+        )}
+        {field(
+          "Location",
+          <input
+            className={inputCls}
+            value={d.demographics.location}
+            onChange={(e) => set({ demographics: { ...d.demographics, location: e.target.value } })}
+          />
+        )}
+        {field(
+          "Income",
+          <input
+            className={inputCls}
+            value={d.demographics.income}
+            onChange={(e) => set({ demographics: { ...d.demographics, income: e.target.value } })}
+          />
+        )}
+        {field(
+          "Education",
+          <input
+            className={inputCls}
+            value={d.demographics.education}
+            onChange={(e) => set({ demographics: { ...d.demographics, education: e.target.value } })}
+          />
+        )}
+      </div>
+
+      <ListEditor label="Pain points" value={d.painPoints} onChange={(v) => set({ painPoints: v })} />
+      <ListEditor label="Goals" value={d.goals} onChange={(v) => set({ goals: v })} />
+      <ListEditor label="Channels" value={d.channels} onChange={(v) => set({ channels: v })} />
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        {field(
+          "Hook",
+          <input
+            className={inputCls}
+            value={d.messaging.hook}
+            onChange={(e) => set({ messaging: { ...d.messaging, hook: e.target.value } })}
+          />
+        )}
+        {field(
+          "Tone",
+          <input
+            className={inputCls}
+            value={d.messaging.tone}
+            onChange={(e) => set({ messaging: { ...d.messaging, tone: e.target.value } })}
+          />
+        )}
+      </div>
+      <ListEditor
+        label="Objections"
+        value={d.messaging.objections}
+        onChange={(v) => set({ messaging: { ...d.messaging, objections: v } })}
+      />
+
+      <div className="rounded-lg border border-white/10 bg-black/20 p-3">
+        <h4 className="mb-2 text-xs uppercase tracking-wide text-white/40">Content pillars</h4>
+        <div className="space-y-2">
+          {d.playbook.contentPillars.map((p, i) => (
+            <div key={i} className="flex gap-2">
+              <input
+                className={inputCls}
+                placeholder="Theme"
+                value={p.theme}
+                onChange={(e) => {
+                  const np = [...d.playbook.contentPillars];
+                  np[i] = { ...np[i], theme: e.target.value };
+                  set({ playbook: { ...d.playbook, contentPillars: np } });
+                }}
+              />
+              <input
+                className={inputCls}
+                placeholder="Angle"
+                value={p.angle}
+                onChange={(e) => {
+                  const np = [...d.playbook.contentPillars];
+                  np[i] = { ...np[i], angle: e.target.value };
+                  set({ playbook: { ...d.playbook, contentPillars: np } });
+                }}
+              />
+              <button
+                onClick={() =>
+                  set({
+                    playbook: {
+                      ...d.playbook,
+                      contentPillars: d.playbook.contentPillars.filter((_, j) => j !== i),
+                    },
+                  })
+                }
+                className="px-2 text-xs text-red-300 hover:text-red-200"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
         </div>
-        <div className={tab === "playbook" ? "block print:block" : "hidden print:block"}>
-          <Playbook persona={persona} />
+        <button
+          onClick={() =>
+            set({
+              playbook: {
+                ...d.playbook,
+                contentPillars: [...d.playbook.contentPillars, { theme: "", angle: "" }],
+              },
+            })
+          }
+          className="mt-2 text-xs text-indigo-300 hover:text-indigo-200"
+        >
+          ＋ Add pillar
+        </button>
+      </div>
+
+      <div className="rounded-lg border border-white/10 bg-black/20 p-3">
+        <h4 className="mb-2 text-xs uppercase tracking-wide text-white/40">Weekly plan</h4>
+        <div className="space-y-2">
+          {d.playbook.weeklyPlan.map((w, i) => (
+            <div key={i} className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+              <input
+                className={inputCls}
+                placeholder="Day"
+                value={w.day}
+                onChange={(e) => {
+                  const n = [...d.playbook.weeklyPlan];
+                  n[i] = { ...n[i], day: e.target.value };
+                  set({ playbook: { ...d.playbook, weeklyPlan: n } });
+                }}
+              />
+              <input
+                className={inputCls}
+                placeholder="Channel"
+                value={w.channel}
+                onChange={(e) => {
+                  const n = [...d.playbook.weeklyPlan];
+                  n[i] = { ...n[i], channel: e.target.value };
+                  set({ playbook: { ...d.playbook, weeklyPlan: n } });
+                }}
+              />
+              <input
+                className={inputCls}
+                placeholder="Format"
+                value={w.format}
+                onChange={(e) => {
+                  const n = [...d.playbook.weeklyPlan];
+                  n[i] = { ...n[i], format: e.target.value };
+                  set({ playbook: { ...d.playbook, weeklyPlan: n } });
+                }}
+              />
+              <input
+                className={inputCls}
+                placeholder="Topic"
+                value={w.topic}
+                onChange={(e) => {
+                  const n = [...d.playbook.weeklyPlan];
+                  n[i] = { ...n[i], topic: e.target.value };
+                  set({ playbook: { ...d.playbook, weeklyPlan: n } });
+                }}
+              />
+              <div className="flex gap-1">
+                <input
+                  className={inputCls}
+                  placeholder="CTA"
+                  value={w.cta}
+                  onChange={(e) => {
+                    const n = [...d.playbook.weeklyPlan];
+                    n[i] = { ...n[i], cta: e.target.value };
+                    set({ playbook: { ...d.playbook, weeklyPlan: n } });
+                  }}
+                />
+                <button
+                  onClick={() =>
+                    set({
+                      playbook: {
+                        ...d.playbook,
+                        weeklyPlan: d.playbook.weeklyPlan.filter((_, j) => j !== i),
+                      },
+                    })
+                  }
+                  className="px-2 text-xs text-red-300 hover:text-red-200"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
-        <div className={tab === "research" ? "block print:block" : "hidden print:block"}>
-          <Research persona={persona} />
-        </div>
+        <button
+          onClick={() =>
+            set({
+              playbook: {
+                ...d.playbook,
+                weeklyPlan: [
+                  ...d.playbook.weeklyPlan,
+                  { day: "", channel: "", format: "", topic: "", cta: "" },
+                ],
+              },
+            })
+          }
+          className="mt-2 text-xs text-indigo-300 hover:text-indigo-200"
+        >
+          ＋ Add item
+        </button>
+      </div>
+
+      <ListEditor
+        label="Best times"
+        value={d.playbook.bestTimes}
+        onChange={(v) => set({ playbook: { ...d.playbook, bestTimes: v } })}
+      />
+      <ListEditor
+        label="Ad hooks"
+        value={d.playbook.adHooks}
+        onChange={(v) => set({ playbook: { ...d.playbook, adHooks: v } })}
+      />
+
+      <div className="grid gap-2 sm:grid-cols-2">
+        <ListEditor label="Empathy · Says" value={emp().says} onChange={(v) => set({ empathy: { ...emp(), says: v } })} />
+        <ListEditor label="Empathy · Thinks" value={emp().thinks} onChange={(v) => set({ empathy: { ...emp(), thinks: v } })} />
+        <ListEditor label="Empathy · Does" value={emp().does} onChange={(v) => set({ empathy: { ...emp(), does: v } })} />
+        <ListEditor label="Empathy · Feels" value={emp().feels} onChange={(v) => set({ empathy: { ...emp(), feels: v } })} />
+      </div>
+      <ListEditor label="Jobs-to-be-Done" value={d.jtbd} onChange={(v) => set({ jtbd: v })} />
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        {field(
+          "Confidence score",
+          <input
+            type="number"
+            className={inputCls}
+            value={conf().score}
+            onChange={(e) => set({ confidence: { ...conf(), score: Number(e.target.value) || 0 } })}
+          />
+        )}
+        {field(
+          "Confidence basis",
+          <select
+            className={inputCls}
+            value={conf().basis}
+            onChange={(e) =>
+              set({ confidence: { ...conf(), basis: e.target.value as "data" | "inferred" } })
+            }
+          >
+            <option value="inferred">inferred</option>
+            <option value="data">data</option>
+          </select>
+        )}
+        {field(
+          "Confidence note",
+          <input
+            className={inputCls}
+            value={conf().note}
+            onChange={(e) => set({ confidence: { ...conf(), note: e.target.value } })}
+          />
+        )}
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        {field(
+          "TAM",
+          <input className={inputCls} value={ms().tam} onChange={(e) => set({ marketSizing: { ...ms(), tam: e.target.value } })} />
+        )}
+        {field(
+          "SAM",
+          <input className={inputCls} value={ms().sam} onChange={(e) => set({ marketSizing: { ...ms(), sam: e.target.value } })} />
+        )}
+        {field(
+          "SOM",
+          <input className={inputCls} value={ms().som} onChange={(e) => set({ marketSizing: { ...ms(), som: e.target.value } })} />
+        )}
+      </div>
+
+      <ListEditor
+        label="Competitors"
+        value={comp().competitors}
+        onChange={(v) => set({ competitive: { ...comp(), competitors: v } })}
+      />
+      {field(
+        "White space",
+        <input
+          className={inputCls}
+          value={comp().whiteSpace}
+          onChange={(e) => set({ competitive: { ...comp(), whiteSpace: e.target.value } })}
+        />
+      )}
+
+      <ListEditor
+        label="Validation · Discussion guide"
+        value={val().discussionGuide}
+        onChange={(v) => set({ validation: { ...val(), discussionGuide: v } })}
+      />
+      <ListEditor
+        label="Validation · Survey questions"
+        value={val().surveyQuestions}
+        onChange={(v) => set({ validation: { ...val(), surveyQuestions: v } })}
+      />
+      <div className="grid gap-3 sm:grid-cols-2">
+        {field(
+          "Recruit",
+          <input
+            className={inputCls}
+            value={val().recruit}
+            onChange={(e) => set({ validation: { ...val(), recruit: e.target.value } })}
+          />
+        )}
+        {field(
+          "Sample size",
+          <input
+            className={inputCls}
+            value={val().sampleSize}
+            onChange={(e) => set({ validation: { ...val(), sampleSize: e.target.value } })}
+          />
+        )}
+      </div>
+
+      <div className="flex items-center gap-3 pt-1">
+        <button
+          onClick={() => onSave(d)}
+          className="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold text-[#ffffff] transition hover:bg-indigo-400"
+        >
+          Save changes
+        </button>
+        <button onClick={onCancel} className="text-sm text-white/50">
+          Cancel
+        </button>
+        <span className="text-xs text-white/40">Edits are saved to this view (and to the build when you Save).</span>
       </div>
     </div>
+  );
+}
+
+function ListEditor({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value?: string[];
+  onChange: (v: string[]) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-xs uppercase tracking-wide text-white/40">{label}</span>
+      <textarea
+        className="w-full rounded-lg border border-white/15 bg-black/30 px-2 py-1 text-sm text-white outline-none focus:border-indigo-400"
+        value={(value ?? []).join("\n")}
+        onChange={(e) => onChange(e.target.value.split("\n").map((s) => s.trim()).filter(Boolean))}
+      />
+    </label>
   );
 }
 
