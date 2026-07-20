@@ -292,7 +292,7 @@ export default function Home() {
         <div className="space-y-4">
           {loading ? (
             liveText ? (
-              <LivePanel text={liveText} />
+              <LivePanel />
             ) : (
               <SkeletonResults />
             )
@@ -332,17 +332,25 @@ export default function Home() {
   );
 }
 
-function LivePanel({ text }: { text: string }) {
+function LivePanel() {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-      <div className="mb-2 flex items-center gap-2 text-sm text-indigo-600">
-        <span className="h-2 w-2 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
-        Generating personas…
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+      <div className="flex items-center gap-2 text-sm font-medium text-indigo-600">
+        <span className="h-4 w-4 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
+        Crafting your personas…
       </div>
-      <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words font-mono text-xs text-slate-500">
-        {text}
-        <span className="ml-0.5 inline-block h-3 w-1.5 animate-pulse bg-slate-400 align-middle" />
-      </pre>
+      <p className="mt-1 text-xs text-slate-400">
+        Researching the market, building playbooks, and writing copy. This takes a few seconds.
+      </p>
+      <div className="mt-4 space-y-2">
+        {[0, 1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="h-3 animate-skeleton rounded bg-slate-200"
+            style={{ width: `${90 - i * 12}%`, animationDelay: `${i * 0.15}s` }}
+          />
+        ))}
+      </div>
     </div>
   );
 }
