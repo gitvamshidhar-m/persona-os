@@ -421,6 +421,30 @@ function Research({ persona }: { persona: Persona }) {
           <p className="mt-2 text-white/70"><span className="text-white/50">White space: </span>{comp.whiteSpace}</p>
         </div>
       )}
+
+      {persona.validation && (
+        <div className="rounded-lg border border-white/10 bg-black/20 p-3">
+          <h4 className="mb-1 text-xs uppercase tracking-wide text-white/40">Validation plan</h4>
+          <p className="text-white/70"><span className="text-white/50">Recruit: </span>{persona.validation.recruit}</p>
+          <p className="text-white/70"><span className="text-white/50">Sample size: </span>{persona.validation.sampleSize}</p>
+          <div className="mt-2">
+            <span className="text-xs uppercase tracking-wide text-white/40">Discussion guide</span>
+            <ul className="list-disc pl-4 text-white/70">
+              {persona.validation.discussionGuide.map((q, i) => (
+                <li key={i}>{q}</li>
+              ))}
+            </ul>
+          </div>
+          <div className="mt-2">
+            <span className="text-xs uppercase tracking-wide text-white/40">Survey questions</span>
+            <ul className="list-disc pl-4 text-white/70">
+              {persona.validation.surveyQuestions.map((q, i) => (
+                <li key={i}>{q}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

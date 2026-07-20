@@ -56,6 +56,13 @@ export interface Competitive {
   whiteSpace: string;
 }
 
+export interface Validation {
+  discussionGuide: string[];
+  surveyQuestions: string[];
+  recruit: string;
+  sampleSize: string;
+}
+
 export interface Overlap {
   personas: [string, string];
   score: number;
@@ -81,6 +88,7 @@ export interface Persona {
   confidence?: Confidence;
   marketSizing?: MarketSizing;
   competitive?: Competitive;
+  validation?: Validation;
   demographics: Demographics;
   psychographics: Psychographics;
   painPoints: string[];

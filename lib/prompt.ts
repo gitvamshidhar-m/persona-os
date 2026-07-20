@@ -55,6 +55,12 @@ Return JSON matching this exact schema:
         "competitors": string[],      // who else targets this persona
         "whiteSpace": string          // positioning gap to exploit
       },
+      "validation": {                 // how to test this persona hypothesis
+        "discussionGuide": string[],  // interview topics
+        "surveyQuestions": string[],  // quantitative questions
+        "recruit": string,            // where to find them
+        "sampleSize": string          // suggested n
+      },
       "demographics": {
         "ageRange": string,
         "location": string,
