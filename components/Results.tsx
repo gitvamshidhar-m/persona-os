@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { Persona, GenerateResponse, ABResponse, ABResult, ContentResponse } from "@/lib/types";
+import { cleanAvatar } from "@/lib/avatar";
 import Compare from "./Compare";
 import Simulate from "./Simulate";
 
@@ -134,7 +135,7 @@ export default function Results({
         <Compare personas={ordered} />
       ) : (
         <div className="grid gap-5 lg:grid-cols-2">
-          {ordered.map((p) => (
+          {ordered.map((p, i) => (
             <PersonaCard
               key={p.id}
               persona={p}
@@ -142,6 +143,7 @@ export default function Results({
               model={model}
               readOnly={readOnly}
               onRefine={onRefine}
+              index={i}
             />
           ))}
         </div>
@@ -161,12 +163,14 @@ function PersonaCard({
   model,
   readOnly,
   onRefine,
+  index,
 }: {
   persona: Persona;
   businessSummary: string;
   model: string;
   readOnly: boolean;
   onRefine: (p: Persona) => void;
+  index: number;
 }) {
   const [tab, setTab] = useState<"profile" | "playbook" | "research">("profile");
   const [showRefine, setShowRefine] = useState(false);
@@ -188,7 +192,7 @@ function PersonaCard({
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Refine failed");
-      onRefine(json as Persona);
+      onRefine({ ...(json as Persona), avatar: cleanAvatar((json as Persona).avatar) });
       setShowRefine(false);
       setInstruction("");
     } catch (e) {
@@ -202,7 +206,7 @@ function PersonaCard({
     <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5 transition hover:border-white/20 hover:shadow-xl hover:shadow-slate-300/70">
       <div className="flex items-center justify-between border-b border-white/10 p-4">
         <div className="flex items-center gap-3">
-          <div className="text-3xl">{persona.avatar}</div>
+          <div className="text-3xl">{cleanAvatar(persona.avatar, index)}</div>
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-lg font-semibold text-white">{persona.name}</h3>

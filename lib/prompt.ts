@@ -35,7 +35,7 @@ Return JSON matching this exact schema:
       "id": string,
       "name": string,
       "tagline": string,
-      "avatar": string,
+      "avatar": string (a single emoji character representing the persona, e.g. "🧑", "👩‍💻", "🚀"),
       "priority": { "score": number, "reason": string },
       "empathy": { "says": string[], "thinks": string[], "does": string[], "feels": string[] },
       "jtbd": string[],

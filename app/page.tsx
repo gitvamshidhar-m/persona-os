@@ -9,6 +9,7 @@ import SkeletonResults from "@/components/SkeletonResults";
 import { GenerateResponse, EMPTY_RESPONSE, Persona, SavedBuild } from "@/lib/types";
 import { decodeShare, encodeShare } from "@/lib/share";
 import { deleteBuild, listBuilds, saveBuild } from "@/lib/storage";
+import { sanitizeAvatars } from "@/lib/avatar";
 import { TEMPLATES } from "@/lib/templates";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 
@@ -32,7 +33,7 @@ export default function Home() {
     if (hash.startsWith("#v=")) {
       const dec = decodeShare(hash.slice(3));
       if (dec && dec.personas?.length) {
-        setResult(dec);
+        setResult(sanitizeAvatars(dec));
         setReadOnly(true);
       }
     }
@@ -185,7 +186,7 @@ export default function Home() {
   };
 
   const loadBuild = (b: SavedBuild) => {
-    setResult(b.response);
+    setResult(sanitizeAvatars(b.response));
     setReadOnly(false);
     setShowHistory(false);
   };
@@ -361,5 +362,5 @@ function parseGenerated(content: string): GenerateResponse | null {
     }
   }
   if (!parsed.personas || parsed.personas.length === 0) return null;
-  return parsed;
+  return sanitizeAvatars(parsed);
 }
